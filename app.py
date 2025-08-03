@@ -78,7 +78,59 @@ eol_modifier = {
 DAYS = 250  # Typical number of work/study days per year
 
 def show_main():
-    st.title("☁️ Digital Usage Form")
+    # --- STILE GLOBALE ---
+    st.markdown("""
+        <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+        html, body, [class*="css"] {
+            font-family: 'Inter', sans-serif;
+        }
+
+        h1, h2, h3, h4 {
+            color: #1d3557;
+        }
+
+        .device-box {
+            background-color: #f1faee;
+            border-left: 6px solid #52b788;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .device-label {
+            font-weight: 600;
+            font-size: 0.95em;
+            margin-bottom: 4px;
+            color: #1d3557;
+        }
+
+        .device-hint {
+            font-size: 12px;
+            color: gray;
+        }
+
+        .impact-text {
+            font-size: 1em;
+            color: #1b4332;
+            font-weight: 600;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # --- TITOLO ---
+    st.markdown("""
+        <div style="background: linear-gradient(to right, #d8f3dc, #a8dadc);
+                    padding: 30px 20px;
+                    border-radius: 15px;
+                    text-align: center;
+                    box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+                    margin-bottom: 30px;">
+            <h1 style="font-size: 2.4em;">☁️ Digital Usage Form</h1>
+        </div>
+    """, unsafe_allow_html=True)
 
     # === DEVICES ===
     st.header("💻 Devices")
@@ -106,60 +158,27 @@ Choose the digital devices you currently use, and for each one, provide a few de
 
     for device_id in st.session_state.device_list:
         base_device = device_id.rsplit("_", 1)[0]
+        st.subheader(base_device)
+
         prev = st.session_state.device_inputs[device_id]
-
-        # --- CARD ESTETICA ---
-        st.markdown(f"""
-            <div style="
-                background-color: #f8fdfc;
-                border-left: 6px solid #52b788;
-                padding: 25px 25px 15px 25px;
-                border-radius: 12px;
-                margin-bottom: 30px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-                position: relative;
-            ">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <h4 style="margin: 0; color: #1d3557;">{base_device}</h4>
-        """, unsafe_allow_html=True)
-
-        # --- BOTTONE REMOVE (lasciato così com'è) ---
-        st.form("remove_form_" + device_id)
-        st.markdown("""
-                    <form action="" method="post">
-                        <button type="submit" name="remove" style="
-                            background-color: #e63946;
-                            border: none;
-                            color: white;
-                            padding: 6px 12px;
-                            border-radius: 6px;
-                            font-size: 0.9em;
-                            cursor: pointer;
-                        ">🗑 Remove</button>
-                    </form>
-                </div>
-        """, unsafe_allow_html=True)
-
-        # --- INPUTS ---
         col1, col2, col3, col4 = st.columns(4)
 
         with col1:
-            st.markdown("**⏳ Device's lifespan**<br/><span style='font-size:12px; color:gray'>How many years you plan to use the device in total</span>", unsafe_allow_html=True)
+            st.markdown("**Device's lifespan**<br/><span class='device-hint'>How many years you plan to use the device in total</span>", unsafe_allow_html=True)
             years = st.number_input("", 0.5, 20.0, step=0.5, format="%.1f", key=f"{device_id}_years")
 
         with col2:
-            st.markdown("**🔧 Condition**<br/><span style='font-size:12px; color:gray'>Was the device new or used when you got it?</span>", unsafe_allow_html=True)
+            st.markdown("**Condition**<br/><span class='device-hint'>Was the device new or used when you got it?</span>", unsafe_allow_html=True)
             used = st.selectbox("", ["New", "Used"], index=["New", "Used"].index(prev["used"]), key=f"{device_id}_used")
 
         with col3:
-            st.markdown("**👥 Ownership**<br/><span style='font-size:12px; color:gray'>Is this device used only by you or shared?</span>", unsafe_allow_html=True)
+            st.markdown("**Ownership**<br/><span class='device-hint'>Is this device used only by you or shared?</span>", unsafe_allow_html=True)
             shared = st.selectbox("", ["Personal", "Shared"], index=["Personal", "Shared"].index(prev["shared"]), key=f"{device_id}_shared")
 
         with col4:
-            st.markdown("**♻️ End-of-life behavior**<br/><span style='font-size:12px; color:gray'>What do you usually do when the device reaches its end of life?</span>", unsafe_allow_html=True)
+            st.markdown("**End-of-life behavior**<br/><span class='device-hint'>What do you usually do when the device reaches its end of life?</span>", unsafe_allow_html=True)
             eol = st.selectbox("", list(eol_modifier.keys()), index=list(eol_modifier.keys()).index(prev["eol"]), key=f"{device_id}_eol")
 
-        # --- UPDATE SESSION STATE ---
         st.session_state.device_inputs[device_id] = {
             "years": years,
             "used": used,
@@ -167,7 +186,11 @@ Choose the digital devices you currently use, and for each one, provide a few de
             "eol": eol
         }
 
-        # --- CALCOLO EMISSIONI ---
+        if st.button(f"🗑 Remove {base_device}", key=f"remove_{device_id}"):
+            st.session_state.device_list.remove(device_id)
+            st.session_state.device_inputs.pop(device_id, None)
+            st.rerun()
+
         impact = device_ef[base_device]
         if used == "New" and shared == "Personal":
             adj_years = years
@@ -185,38 +208,32 @@ Choose the digital devices you currently use, and for each one, provide a few de
         total_prod += prod_per_year
         total_eol += eol_impact
 
-        # --- BOX CO2 ---
-        st.markdown(f"""
-            <div style="
-                margin-top: 20px;
-                background-color: #d8f3dc;
-                padding: 12px 20px;
-                border-radius: 10px;
-                font-weight: 500;
-                color: #1b4332;
-            ">
-                📊 Production: {prod_per_year:.2f} kg CO₂e/year &nbsp;&nbsp;&nbsp;
-                ♻️ End-of-life: {eol_impact:.2f} kg CO₂e/year
-            </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
+        st.markdown(f"<div class='impact-text'>📊 <strong>Production</strong>: {prod_per_year:.2f} kg CO₂e/year &nbsp;&nbsp;&nbsp; <strong>End-of-life</strong>: {eol_impact:.2f} kg CO₂e/year</div>", unsafe_allow_html=True)
 
 
     # === DIGITAL ACTIVITIES ===
-    st.header("🎓 Digital Activities")
-
     st.markdown("""
-        <div style="background-color: #f8fdfc; border-left: 6px solid #52b788;
-                    padding: 20px 25px; border-radius: 12px; margin-bottom: 30px;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.06);">
-            <p style="font-size: 17px; margin-bottom: 0;">
-                Estimate how many hours per day you spend on each activity during a typical 8-hour study or work day.  
-                You may exceed 8 hours if multitasking (e.g., watching a lecture while writing notes).
-            </p>
-        </div>
+        <style>
+        .section-header {
+            color: #1d3557;
+            font-size: 1.8em;
+            margin-top: 40px;
+        }
+
+        .activity-desc {
+            font-size: 18px;
+            color: #333;
+        }
+        </style>
     """, unsafe_allow_html=True)
+
+    st.markdown("<div class='section-header'>🎓 Digital Activities</div>", unsafe_allow_html=True)
+    st.markdown("""
+<span class='activity-desc'>
+Estimate how many hours per day you spend on each activity during a typical 8-hour study or work day.  
+You may exceed 8 hours if multitasking (e.g., watching a lecture while writing notes).
+</span>
+""", unsafe_allow_html=True)
 
     role = st.session_state.role
     ore_dict = {}
@@ -226,68 +243,51 @@ Choose the digital devices you currently use, and for each one, provide a few de
 
     for i, (act, ef) in enumerate(activity_factors[role].items()):
         with (col1 if i % 2 == 0 else col2):
-            st.markdown(f"""
-                <div style="background-color: #e3fced; padding: 15px 20px; border-radius: 10px;
-                            margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
-                    <label style="font-weight: 600; font-size: 16px;">{act} (h/day)</label>
-            """, unsafe_allow_html=True)
-
-            ore = st.slider("", min_value=0.0, max_value=8.0, value=0.0, step=0.5, key=act)
-            st.markdown("</div>", unsafe_allow_html=True)
+            ore = st.slider(f"{act} (h/day)", min_value=0.0, max_value=8.0, value=0.0, step=0.5, key=act)
             ore_dict[act] = ore
             digital_total += ore * ef * DAYS
 
-    # === HABITS BLOCK ===
-    st.markdown("""
-        <div style="background-color: #f8fdfc; border-left: 6px solid #52b788;
-                    padding: 20px 25px; border-radius: 12px; margin-top: 30px;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.06);">
-            <p style="font-size: 17px; margin-bottom: 0;">
-                Now tell us more about your habits related to email, cloud, printing and connectivity.
-            </p>
-        </div>
-        <br>
-    """, unsafe_allow_html=True)
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown("**📧 Emails without attachments**", unsafe_allow_html=True)
-        email_plain = st.selectbox("", ["1–10", "11–20", "21–30", "31–40", "> 40"])
-
-        st.markdown("**📎 Emails with attachments**", unsafe_allow_html=True)
-        email_attach = st.selectbox("", ["1–10", "11–20", "21–30", "31–40", "> 40"])
-
-    with col2:
-        st.markdown("**☁️ Cloud Storage for academic/work files**", unsafe_allow_html=True)
-        cloud = st.selectbox("", ["<5GB", "5–20GB", "20–50GB", "50–100GB"])
-
-        st.markdown("**🖨️ Printed pages per day**", unsafe_allow_html=True)
-        pages = st.number_input("", 0, 100, 0)
-
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
 
     st.markdown("""
-        <div style="background-color: #e3fced; padding: 20px; border-radius: 10px; margin-bottom: 25px;
-                    box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
-            <label style="font-weight: 600; font-size: 16px;">📶 Daily Wi-Fi usage (hours)</label>
-    """, unsafe_allow_html=True)
+<span class='activity-desc'>
+Now tell us more about your habits related to email, cloud, printing and connectivity.
+</span>
+""", unsafe_allow_html=True)
 
-    wifi = st.slider("", 0.0, 8.0, 4.0, 0.5)
-    st.markdown("</div>", unsafe_allow_html=True)
+    email_plain = st.selectbox(
+        "Emails sent/received during a typical 8-hour day **no attachments** - do not include spam emails",
+        ["1–10", "11–20", "21–30", "31–40", "> 40"]
+    )
 
-    st.markdown("""
-        <div style="background-color: #e3fced; padding: 20px; border-radius: 10px;
-                    box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
-            <label style="font-weight: 600; font-size: 16px;">💻 When you're not using your computer...</label>
-    """, unsafe_allow_html=True)
+    email_attach = st.selectbox(
+        "Emails sent/received during a typical 8-hour day **with attachments** - do not include spam emails",
+        ["1–10", "11–20", "21–30", "31–40", "> 40"]
+    )
 
-    idle = st.radio("", ["I turn it off", "I leave it on (idle mode)", "I don’t have a computer"])
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # === CALCOLI DIGITAL ACTIVITIES ===
     emails = {"1–10": 5, "11–20": 15, "21–30": 25, "31–40": 35, "> 40": 45}
+
+    cloud = st.selectbox(
+        "Cloud storage you currently use **for academic or work-related files** (e.g., on iCloud, Google Drive, OneDrive)",
+        ["<5GB", "5–20GB", "20–50GB", "50–100GB"]
+    )
+
     cloud_gb = {"<5GB": 3, "5–20GB": 13, "20–50GB": 35, "50–100GB": 75}
+
+    wifi = st.slider(
+        "Estimate your daily Wi-Fi connection time during a typical 8-hour study or work day, including hours when you're not actively using your device (e.g., background apps, idle mode)",
+        0.0, 8.0, 4.0, 0.5
+    )
+
+    pages = st.number_input(
+        "Number of pages you print per day for academic or work purposes",
+        0, 100, 0
+    )
+
+    idle = st.radio(
+        "When you're not using your computer...",
+        ["I turn it off", "I leave it on (idle mode)", "I don’t have a computer"]
+    )
 
     mail_total = emails[email_plain] * 0.004 * DAYS + emails[email_attach] * 0.035 * DAYS + cloud_gb[cloud] * 0.01
     wifi_total = wifi * 0.00584 * DAYS
@@ -297,66 +297,67 @@ Choose the digital devices you currently use, and for each one, provide a few de
         idle_total = DAYS * 0.0104 * 16
     elif idle == "I turn it off":
         idle_total = DAYS * 0.0005204 * 16
-    else:
+    else:  # "I don’t have a computer"
         idle_total = 0
 
     digital_total += mail_total + wifi_total + print_total + idle_total
 
 
-    # === AI TOOLS ===
-    st.header("🤖 AI Tools")
 
+    # === AI TOOLS ===
     st.markdown("""
-        <div style="background-color: #f8fdfc; border-left: 6px solid #52b788;
-                    padding: 20px 25px; border-radius: 12px; margin-bottom: 25px;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.06);">
-            <p style="font-size: 17px; margin-bottom: 0;">
-                Estimate how many queries you make per day for each AI-powered task.
-            </p>
-        </div>
+        <style>
+        .section-header {
+            color: #1d3557;
+            font-size: 1.8em;
+            margin-top: 40px;
+        }
+
+        .ai-desc {
+            font-size: 17px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        </style>
     """, unsafe_allow_html=True)
+
+    st.markdown("<div class='section-header'>🤖 AI Tools</div>", unsafe_allow_html=True)
+    st.markdown("<div class='ai-desc'>Estimate how many queries you make per day for each AI-powered task.</div>", unsafe_allow_html=True)
 
     ai_total = 0
     cols = st.columns(2)
 
     for i, (task, ef) in enumerate(ai_factors.items()):
         with cols[i % 2]:
-            st.markdown(f"""
-                <div style="background-color: #e3fced; padding: 20px 20px 10px 20px;
-                            border-radius: 10px; margin-bottom: 20px;
-                            box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
-                    <label style="font-weight: 600; font-size: 16px;">{task} (queries/day)</label>
-            """, unsafe_allow_html=True)
-
-            q = st.number_input("", 0, 100, 0, key=task)
-
-            st.markdown("</div>", unsafe_allow_html=True)
-
+            q = st.number_input(f"{task} (queries/day)", 0, 100, 0, key=task)
             ai_total += q * ef * DAYS
 
 
     # === FINAL BUTTON ===
     st.markdown("""
-        <div style="text-align: center; margin: 40px 0 20px 0;">
-            <button style="
-                background-color: #52b788;
-                color: white;
-                border: none;
-                padding: 14px 28px;
-                font-size: 18px;
-                border-radius: 10px;
-                cursor: pointer;
-                font-weight: 600;
-                transition: background-color 0.3s ease;
-            " onmouseover="this.style.backgroundColor='#40916c'"
-              onmouseout="this.style.backgroundColor='#52b788'">
-                🌍 Discover Your Digital Carbon Footprint!
-            </button>
-        </div>
+        <style>
+        .final-button {
+            margin-top: 50px;
+            text-align: center;
+        }
+
+        .final-button button {
+            background-color: #52b788 !important;
+            color: white !important;
+            font-size: 1.1em !important;
+            padding: 0.6em 1.2em !important;
+            border-radius: 8px !important;
+            border: none !important;
+        }
+
+        .final-button button:hover {
+            background-color: #40916c !important;
+        }
+        </style>
     """, unsafe_allow_html=True)
 
-    # Simula il click del bottone Streamlit (funzionale)
-    if st.button("🌍 Discover Your Digital Carbon Footprint!", key="trigger_logic"):
+    st.markdown('<div class="final-button">', unsafe_allow_html=True)
+    if st.button("🌍 Discover Your Digital Carbon Footprint!"):
         st.session_state.results = {
             "Devices": total_prod,
             "E-Waste": total_eol,
@@ -365,96 +366,81 @@ Choose the digital devices you currently use, and for each one, provide a few de
         }
         st.session_state.page = "results"
         st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 
 
 def show_intro():
-    import streamlit as st
-
+    # --- STILE GLOBALE ---
     st.markdown("""
         <style>
-        .intro-hero {
-            background: linear-gradient(to right, #d8f3dc, #a8dadc);
-            padding: 50px 30px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            margin-bottom: 30px;
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+        html, body, [class*="css"] {
+            font-family: 'Inter', sans-serif;
         }
-        .intro-title {
-            font-size: 2.5em;
-            margin-bottom: 0.2em;
+
+        h1, h2, h3, h4 {
             color: #1d3557;
         }
-        .intro-subtitle {
-            font-size: 1.1em;
-            color: #1b4332;
+
+        .intro-box {
+            background: linear-gradient(to right, #d8f3dc, #a8dadc);
+            padding: 40px 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+            margin-bottom: 30px;
         }
-        .intro-body {
+
+        .selectbox-container {
             background-color: #f1faee;
-            padding: 30px;
+            border-left: 5px solid #52b788;
             border-radius: 10px;
-            max-width: 700px;
-            margin: auto;
-            font-size: 1.05em;
-            color: #333;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 20px;
+            margin-top: 25px;
         }
-        .select-label {
-            margin-top: 1.5em;
-            font-weight: 600;
-        }
-        .start-btn {
-            background-color: #52b788;
-            color: white;
-            padding: 0.75em 1.5em;
-            font-size: 1em;
-            border-radius: 8px;
-            border: none;
+
+        .start-button {
             margin-top: 20px;
-            transition: all 0.2s ease;
-        }
-        .start-btn:hover {
-            background-color: #40916c;
-            cursor: pointer;
         }
         </style>
     """, unsafe_allow_html=True)
 
-    # --- HERO SECTION ---
+    # --- HERO INTUITIVO ---
     st.markdown("""
-        <div class="intro-hero">
-            <h1 class="intro-title">📱 Digital Carbon Footprint Calculator</h1>
-            <p class="intro-subtitle">A Green DiLT initiative to raise awareness on digital sustainability in academia</p>
+        <div class="intro-box">
+            <h1 style="font-size: 2.6em;">📱 Digital Carbon Footprint Calculator</h1>
         </div>
     """, unsafe_allow_html=True)
 
-    # --- CORPO TESTO ---
+    # --- TESTO DESCRITTIVO ---
     st.markdown("""
-        <div class="intro-body">
-            Welcome to the <b>Digital Carbon Footprint Calculator</b>, a tool developed within the <i>Green DiLT</i> project to raise awareness about the hidden environmental impact of digital habits in academia.
-            <br><br>
-            This calculator is tailored for <b>university students, professors, and staff members</b>, helping you estimate your CO₂e emissions from everyday digital activities — often overlooked, but increasingly relevant.
-            <hr style="margin: 1.5em 0;">
-            👉 <b>Select your role to begin:</b>
-        </div>
-    """, unsafe_allow_html=True)
+Welcome to the **Digital Carbon Footprint Calculator**, a tool developed within the *Green DiLT* project to raise awareness about the hidden environmental impact of digital habits in academia.
+
+This calculator is tailored for **university students, professors, and staff members**, helping you estimate your CO₂e emissions from everyday digital activities — often overlooked, but increasingly relevant.
+
+---
+
+👉 Select your role to begin:
+""")
 
     # --- SELECTBOX ---
-    st.session_state.role = st.selectbox(
-        "What is your role in academia?",
-        ["", "Student", "Professor", "Staff Member"]
-    )
+    with st.container():
+        st.session_state.role = st.selectbox(
+            "What is your role in academia?",
+            ["", "Student", "Professor", "Staff Member"]
+        )
 
-    # --- START BUTTON ---
-    start = st.button("➡️ Start Calculation")
-
-    if start:
+    # --- BOTTONE START ---
+    st.markdown('<div class="start-button">', unsafe_allow_html=True)
+    if st.button("➡️ Start Calculation"):
         if st.session_state.role:
             st.session_state.page = "main"
             st.rerun()
         else:
             st.warning("Please select your role before continuing.")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 
 
@@ -748,5 +734,3 @@ elif st.session_state.page == "main":
     show_main()
 elif st.session_state.page == "results":
     show_results()
-
-
